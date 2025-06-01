@@ -2,11 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app import schemas, models
+from app import schemas, models # Ensure models is imported
 from app.services.guest_service import GuestService
 from app.database import get_db
+from app.core.security import get_current_active_user, RoleChecker # Import
 
 router = APIRouter()
+admin_agent_roles = RoleChecker(allowed_roles=["admin", "agent"])
+admin_only = RoleChecker(allowed_roles=["admin"])
 
 def get_guest_service(db: Session = Depends(get_db)) -> GuestService:
     return GuestService(db_session=db)
@@ -14,7 +17,8 @@ def get_guest_service(db: Session = Depends(get_db)) -> GuestService:
 @router.post("/", response_model=schemas.GuestRead, status_code=status.HTTP_201_CREATED)
 def create_guest(
     guest_create: schemas.GuestCreate,
-    service: GuestService = Depends(get_guest_service)
+    service: GuestService = Depends(get_guest_service),
+    current_user: models.User = Depends(admin_agent_roles) # Agent or Admin
 ):
     try:
         return service.create_guest(guest_create=guest_create)
@@ -27,14 +31,16 @@ def create_guest(
 def read_guests(
     skip: int = 0,
     limit: int = 100,
-    service: GuestService = Depends(get_guest_service)
+    service: GuestService = Depends(get_guest_service),
+    current_user: models.User = Depends(admin_agent_roles) # Agent or Admin
 ):
     return service.get_all_guests(skip=skip, limit=limit)
 
 @router.get("/{guest_id}", response_model=schemas.GuestRead)
 def read_guest(
     guest_id: int,
-    service: GuestService = Depends(get_guest_service)
+    service: GuestService = Depends(get_guest_service),
+    current_user: models.User = Depends(admin_agent_roles) # Agent or Admin
 ):
     db_guest = service.get_guest_by_id(guest_id=guest_id)
     if db_guest is None:
@@ -45,7 +51,8 @@ def read_guest(
 def update_guest(
     guest_id: int,
     guest_update: schemas.GuestUpdate,
-    service: GuestService = Depends(get_guest_service)
+    service: GuestService = Depends(get_guest_service),
+    current_user: models.User = Depends(admin_agent_roles) # Agent or Admin
 ):
     try:
         updated_guest = service.update_guest(guest_id=guest_id, guest_update=guest_update)
@@ -60,7 +67,8 @@ def update_guest(
 @router.delete("/{guest_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_guest(
     guest_id: int,
-    service: GuestService = Depends(get_guest_service)
+    service: GuestService = Depends(get_guest_service),
+    current_user: models.User = Depends(admin_only) # Admin only for deletion
 ):
     try:
         deleted_guest = service.delete_guest(guest_id=guest_id)

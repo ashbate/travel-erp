@@ -1,14 +1,17 @@
-import stripe # Add import
+import stripe
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app import schemas, models
+from app import schemas, models # Ensure models is imported
 from app.services.payment_service import PaymentService
 from app.database import get_db
 from app.core.config import settings
+from app.core.security import get_current_active_user, RoleChecker # Import
 
 router = APIRouter()
+admin_agent_roles = RoleChecker(allowed_roles=["admin", "agent"])
+admin_only = RoleChecker(allowed_roles=["admin"])
 
 def get_payment_service(db: Session = Depends(get_db)) -> PaymentService:
     return PaymentService(db_session=db)
@@ -16,7 +19,8 @@ def get_payment_service(db: Session = Depends(get_db)) -> PaymentService:
 @router.post("/create-payment-intent", response_model=schemas.PaymentIntentResponse)
 async def create_payment_intent_endpoint(
     intent_request: schemas.PaymentIntentCreateRequest,
-    service: PaymentService = Depends(get_payment_service)
+    service: PaymentService = Depends(get_payment_service),
+    current_user: models.User = Depends(admin_agent_roles) # Agent or Admin can initiate
 ):
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Stripe payments are not configured.")
@@ -41,34 +45,31 @@ async def stripe_webhooks_endpoint(
 
     payload = await request.body()
     try:
-        event = await stripe.Webhook.construct_event_async( # Async construction
+        event = await stripe.Webhook.construct_event_async(
             payload, sig_header=stripe_signature, secret=settings.STRIPE_WEBHOOK_SECRET
         )
-    except ValueError as e: # Invalid payload
+    except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid payload: {e}")
-    except stripe.error.SignatureVerificationError as e: # Invalid signature
+    except stripe.error.SignatureVerificationError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid signature: {e}")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Webhook error: {e}")
 
-    # Handle the event
+    # Handle the event (rest of the logic from original, no auth needed here)
     if event.type == 'payment_intent.succeeded':
-        payment_intent = event.data.object # contains a stripe.PaymentIntent
+        payment_intent = event.data.object
         booking_id = payment_intent.metadata.get('booking_id')
         if booking_id:
             try:
                 service.record_stripe_payment(
                     booking_id=int(booking_id),
                     payment_intent_id=payment_intent.id,
-                    amount=Decimal(payment_intent.amount_received), # amount_received is in cents
+                    amount=schemas.Decimal(payment_intent.amount_received),
                     status='Succeeded',
                     currency=payment_intent.currency
                 )
             except ValueError as e:
-                # Log error, e.g. booking not found or other issue
                 print(f"Error processing successful payment webhook: {e} for PI {payment_intent.id}")
-                # Return 200 to Stripe anyway so it doesn't keep retrying for this specific error
-                # but log it for investigation.
                 return {"status": "error processing event but acknowledged"}
         else:
             print(f"Webhook for PI Succeeded {payment_intent.id} missing booking_id in metadata.")
@@ -81,7 +82,7 @@ async def stripe_webhooks_endpoint(
                 service.record_stripe_payment(
                     booking_id=int(booking_id),
                     payment_intent_id=payment_intent.id,
-                    amount=Decimal(payment_intent.amount), # amount is in cents
+                    amount=schemas.Decimal(payment_intent.amount),
                     status='Failed',
                     currency=payment_intent.currency
                 )
@@ -95,24 +96,19 @@ async def stripe_webhooks_endpoint(
 
     return {"status": "success"}
 
-
-# Existing endpoints (get_payments_for_booking, get_payment, update_payment_status_endpoint)
-# The create_payment endpoint is replaced by create_payment_intent_endpoint.
-# The update_payment_status_endpoint might be less relevant if Stripe webhooks are the source of truth.
-
 @router.get("/booking/{booking_id}", response_model=List[schemas.PaymentRead])
-# ... (no changes to this existing endpoint)
 async def read_payments_for_booking(
     booking_id: int,
-    service: PaymentService = Depends(get_payment_service)
+    service: PaymentService = Depends(get_payment_service),
+    current_user: models.User = Depends(admin_agent_roles) # Agent or Admin
 ):
     return service.get_payments_for_booking(booking_id=booking_id)
 
 @router.get("/{payment_id}", response_model=schemas.PaymentRead)
-# ... (no changes to this existing endpoint)
 async def read_payment(
     payment_id: int,
-    service: PaymentService = Depends(get_payment_service)
+    service: PaymentService = Depends(get_payment_service),
+    current_user: models.User = Depends(admin_agent_roles) # Agent or Admin
 ):
     db_payment = service.get_payment_by_id(payment_id=payment_id)
     if db_payment is None:
@@ -120,11 +116,11 @@ async def read_payment(
     return db_payment
 
 @router.put("/{payment_id}/status", response_model=schemas.PaymentRead)
-# ... (no changes to this existing endpoint, but consider its role)
 async def update_payment_status_endpoint(
     payment_id: int,
     status_update: schemas.PaymentUpdate,
-    service: PaymentService = Depends(get_payment_service)
+    service: PaymentService = Depends(get_payment_service),
+    current_user: models.User = Depends(admin_only) # Only Admin can manually update status
 ):
     if status_update.status is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Status field is required.")

@@ -17,9 +17,10 @@ class AIService:
 
     def _construct_prompt_message(self, prompt_data: AITourPrompt) -> str:
         # Basic prompt construction. This can be significantly more sophisticated.
-        message = "Generate a suggested tour itinerary based on the following details:\n"
-        message += f"Destination: {prompt_data.destination}\n"
-        message += f"Duration (days): {prompt_data.duration_days}\n"
+        message = f"""Generate a suggested tour itinerary based on the following details:
+Destination: {prompt_data.destination}
+Duration (days): {prompt_data.duration_days}
+"
         if prompt_data.traveler_type:
             message += f"Traveler Type: {prompt_data.traveler_type}\n"
         if prompt_data.interests:
@@ -28,12 +29,13 @@ class AIService:
             message += f"Budget Level: {prompt_data.budget_level}\n"
         if prompt_data.preferred_activities:
             message += f"Preferred Activities: {', '.join(prompt_data.preferred_activities)}\n"
-        message += (
-            "Please provide a suggested tour name, a brief description, a day-by-day itinerary in Markdown format, an estimated price range, and any important warnings or notes for the traveler.\n\n"
-            "Format your response as a JSON object with the following keys: 'tour_name_suggestion', 'suggested_description', 'itinerary_details' (Markdown string), 'estimated_price_range', 'warnings' (list of strings).\n"
-            "Example for itinerary_details:\n"
-            "Day 1: Description of activities.\\n- Activity 1\\n- Activity 2\\nDay 2: Description of activities.\\n...\n"
-        )
+        message += """
+Please provide a suggested tour name, a brief description, a day-by-day itinerary in Markdown format, an estimated price range, and any important warnings or notes for the traveler.
+
+Format your response as a JSON object with the following keys: "tour_name_suggestion", "suggested_description", "itinerary_details" (Markdown string), "estimated_price_range", "warnings" (list of strings).
+Example for itinerary_details:
+Day 1: Description of activities.\n- Activity 1\n- Activity 2\nDay 2: Description of activities.\n...
+"""
         return message
 
     def generate_itinerary(self, prompt_data: AITourPrompt) -> AIGeneratedItinerary:

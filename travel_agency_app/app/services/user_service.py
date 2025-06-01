@@ -3,12 +3,13 @@ from typing import List, Optional
 
 from app import models
 from app import schemas
-# from app.core.security import get_password_hash # Assuming you'll have a security utility
+from app.core.security import get_password_hash, verify_password # Import hashing functions
 
 class UserService:
     def __init__(self, db_session: Session):
         self.db = db_session
 
+    # ... (get_user_by_id, get_user_by_username, get_user_by_email, get_all_users remain same) ...
     def get_user_by_id(self, user_id: int) -> Optional[models.User]:
         return self.db.query(models.User).filter(models.User.id == user_id).first()
 
@@ -27,16 +28,12 @@ class UserService:
         if self.get_user_by_email(user_create.email):
             raise ValueError(f"User with email {user_create.email} already exists.")
 
-        # In a real app, hash the password before saving
-        # hashed_password = get_password_hash(user_create.password)
-        # db_user = models.User(**user_create.model_dump(exclude={'password'}), hashed_password=hashed_password)
-
-        # For now, storing password as is (NOT FOR PRODUCTION)
+        hashed_password = get_password_hash(user_create.password)
         db_user = models.User(
             username=user_create.username,
             email=user_create.email,
             full_name=user_create.full_name,
-            hashed_password=f"hashed_{user_create.password}", # Placeholder for hashing
+            hashed_password=hashed_password, # Store hashed password
             role=user_create.role
         )
         self.db.add(db_user)
@@ -44,6 +41,15 @@ class UserService:
         self.db.refresh(db_user)
         return db_user
 
+    def authenticate_user(self, username: str, password: str) -> Optional[models.User]:
+        user = self.get_user_by_username(username)
+        if not user:
+            return None
+        if not verify_password(password, user.hashed_password):
+            return None
+        return user
+
+    # ... (update_user and delete_user remain same for now, but update might need password change logic later) ...
     def update_user(self, user_id: int, user_update: schemas.UserUpdate) -> Optional[models.User]:
         db_user = self.get_user_by_id(user_id)
         if not db_user:
@@ -64,9 +70,6 @@ class UserService:
         self.db.refresh(db_user)
         return db_user
 
-    # Delete user: consider what happens to tours created by them.
-    # Might need to reassign or prevent deletion if they have critical data linked.
-    # For now, a simple delete.
     def delete_user(self, user_id: int) -> Optional[models.User]:
         db_user = self.get_user_by_id(user_id)
         if not db_user:

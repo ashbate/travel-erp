@@ -15,6 +15,7 @@ from .booking import (
     BookingRoomAssignmentBase, BookingRoomAssignmentCreate, BookingRoomAssignmentUpdate, BookingRoomAssignmentRead
 )
 from .payment import PaymentBase, PaymentCreate, PaymentUpdate, PaymentRead, PaymentIntentCreateRequest, PaymentIntentResponse
+from .token import Token, TokenData # Added import for Token schemas
 
 __all__ = [
     "BaseSchema", "TimestampedSchema",
@@ -29,4 +30,5 @@ __all__ = [
     "BookingRoomAssignmentBase", "BookingRoomAssignmentCreate", "BookingRoomAssignmentUpdate", "BookingRoomAssignmentRead",
     "PaymentBase", "PaymentCreate", "PaymentUpdate", "PaymentRead",
     "PaymentIntentCreateRequest", "PaymentIntentResponse",
+    "Token", "TokenData", # Added Token schemas
 ]

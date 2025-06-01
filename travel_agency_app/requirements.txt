@@ -6,3 +6,7 @@ pydantic[email]
 python-dotenv
 openai
 stripe
+passlib[bcrypt]
+python-jose[cryptography]
+pytest # For testing
+httpx # Required by FastAPI's TestClient
