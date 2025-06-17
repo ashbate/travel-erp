@@ -31,6 +31,16 @@ export interface TourReadClient {
   hotel_allocations?: TourHotelAllocationClient[];
   created_at?: string;
   updated_at?: string;
+  travel_mode?: string; // Added
+}
+
+// Enum for Travel Mode Choices (can be used in forms)
+export enum TravelModeChoices {
+  BUS = "Bus",
+  PLANE = "Plane",
+  TRAIN = "Train",
+  MIXED = "Mixed",
+  OTHER = "Other",
 }
 
 export interface TourCreateClient {
@@ -42,6 +52,7 @@ export interface TourCreateClient {
   price_per_guest: number;
   max_capacity?: number | null;
   itinerary_details?: string | null;
+  travel_mode?: string; // Added
   // created_by_user_id will be handled by backend based on authenticated user
   // or if admin, they might specify it. For now, assume backend handles it.
 }
@@ -55,6 +66,7 @@ export interface TourUpdateClient {
   price_per_guest?: number;
   max_capacity?: number | null;
   itinerary_details?: string | null;
+  travel_mode?: string; // Added
   // created_by_user_id is typically not updatable directly by editor unless admin overrriding
 }
 

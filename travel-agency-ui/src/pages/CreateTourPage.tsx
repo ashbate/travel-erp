@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { createTour } from '../services/apiService';
-import { TourCreateClient } from '../types';
+import { TourCreateClient, TravelModeChoices } from '../types'; // Import TravelModeChoices
 
 // Form input type might be slightly different if handling dates/numbers specifically before submission
-interface CreateTourFormInput extends Omit<TourCreateClient, 'price_per_guest' | 'max_capacity'> {
+interface CreateTourFormInput extends Omit<TourCreateClient, 'price_per_guest' | 'max_capacity' | 'travel_mode'> {
   price_per_guest_str: string;
   max_capacity_str?: string;
+  travel_mode?: TravelModeChoices | ""; // Add travel_mode, allow empty string for default/unselected
 }
 
 const CreateTourPage: React.FC = () => {
@@ -26,6 +27,7 @@ const CreateTourPage: React.FC = () => {
       max_capacity: data.max_capacity_str ? parseInt(data.max_capacity_str, 10) : null,
       description: data.description || null,
       itinerary_details: data.itinerary_details || null,
+      travel_mode: data.travel_mode === "" ? undefined : data.travel_mode, // Convert empty string to undefined
     };
 
     try {
@@ -83,6 +85,16 @@ const CreateTourPage: React.FC = () => {
         <div>
           <label htmlFor="itinerary_details">Itinerary Details (Optional, Markdown supported by backend):</label>
           <textarea id="itinerary_details" {...register('itinerary_details')} style={{...inputStyle, height: '120px', whiteSpace: 'pre-wrap'}} />
+        </div>
+
+        <div>
+          <label htmlFor="travel_mode">Travel Mode (Optional):</label>
+          <select id="travel_mode" {...register('travel_mode')} style={inputStyle}>
+            <option value="">Select Travel Mode</option>
+            {Object.values(TravelModeChoices).map((mode) => (
+              <option key={mode} value={mode}>{mode}</option>
+            ))}
+          </select>
         </div>
 
         {apiError && <p style={{ color: 'red', marginTop: '1rem' }}>Error: {apiError}</p>}

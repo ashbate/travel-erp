@@ -84,6 +84,13 @@ const TourDetailPage: React.FC = () => {
       </div>
       <h1>{tour.name}</h1>
       <p><strong>Destination:</strong> {tour.destination}</p>
+      {tour.travel_mode && <p><strong>Travel Mode:</strong> {tour.travel_mode}</p>}
+      <p><strong>Dates:</strong> {new Date(tour.start_date).toLocaleDateString()} - {new Date(tour.end_date).toLocaleDateString()}</p>
+      <p><strong>Price:</strong> ${tour.price_per_guest} per guest</p>
+      {tour.max_capacity && <p><strong>Max Capacity:</strong> {tour.max_capacity} guests</p>}
+      <p><strong>Current Bookings:</strong> {tour.current_bookings_count}</p>
+      {tour.description && <p style={{marginTop: '1rem', whiteSpace: 'pre-wrap'}}><strong>Description:</strong><br/>{tour.description}</p>}
+
       {/* ... other tour details ... */}
       {error && <p style={{color: 'red', border: '1px solid red', padding: '0.5rem'}}>Page Error: {error}</p>}
 

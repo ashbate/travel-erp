@@ -45,6 +45,7 @@ const ToursListPage: React.FC = () => {
               <th style={tableHeaderStyle}>Start Date</th>
               <th style={tableHeaderStyle}>End Date</th>
               <th style={tableHeaderStyle}>Price</th>
+              <th style={tableHeaderStyle}>Travel Mode</th> {/* Added */}
               <th style={tableHeaderStyle}>Actions</th>
             </tr>
           </thead>
@@ -56,6 +57,7 @@ const ToursListPage: React.FC = () => {
                 <td style={tableCellStyle}>{new Date(tour.start_date).toLocaleDateString()}</td>
                 <td style={tableCellStyle}>{new Date(tour.end_date).toLocaleDateString()}</td>
                 <td style={tableCellStyle}>${tour.price_per_guest}</td>
+                <td style={tableCellStyle}>{tour.travel_mode || 'N/A'}</td> {/* Added */}
                 <td style={tableCellStyle}>
                   <Link to={`/tours/${tour.id}`} style={{ marginRight: '0.5rem' }}>View</Link>
                   {/* Edit/Delete links later */}

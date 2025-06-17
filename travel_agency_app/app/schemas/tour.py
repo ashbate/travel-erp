@@ -1,6 +1,7 @@
 from typing import Optional, List
 from datetime import date
 from decimal import Decimal
+from enum import Enum
 from .base import BaseSchema, TimestampedSchema
 from .user import UserRead
 from .hotel import RoomConfigurationRead # For tour hotel allocations
@@ -25,6 +26,14 @@ class TourHotelAllocationRead(TourHotelAllocationBase, TimestampedSchema):
     tour_id: int
     # Potentially add nested HotelRead and RoomConfigurationRead if needed for responses
 
+# --- TravelModeChoices Enum ---
+class TravelModeChoices(str, Enum):
+    BUS = "Bus"
+    PLANE = "Plane"
+    TRAIN = "Train"
+    MIXED = "Mixed"
+    OTHER = "Other"
+
 # --- Tour Schemas ---
 class TourBase(BaseSchema):
     name: str
@@ -35,6 +44,7 @@ class TourBase(BaseSchema):
     price_per_guest: Decimal
     max_capacity: Optional[int] = None
     itinerary_details: Optional[str] = None
+    travel_mode: Optional[TravelModeChoices] = None
 
 class TourCreate(TourBase):
     created_by_user_id: int
@@ -48,6 +58,7 @@ class TourUpdate(BaseSchema):
     price_per_guest: Optional[Decimal] = None
     max_capacity: Optional[int] = None
     itinerary_details: Optional[str] = None
+    travel_mode: Optional[TravelModeChoices] = None
 
 class TourRead(TourBase, TimestampedSchema):
     created_by_user_id: int

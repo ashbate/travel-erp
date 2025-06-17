@@ -14,6 +14,7 @@ class Tour(TimestampedModel):
     max_capacity = Column(Integer)
     current_bookings_count = Column(Integer, default=0) # Renamed from current_bookings to avoid confusion with relationship
     itinerary_details = Column(Text) # Can be Markdown or JSON from AI
+    travel_mode = Column(String(50), nullable=True) # New field
 
     created_by_user_id = Column(Integer, ForeignKey("users.id"))
     creator = relationship("User", back_populates="tours_created")

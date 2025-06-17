@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { getTourById, updateTour } from '../services/apiService';
-import { TourReadClient, TourUpdateClient } from '../types';
+import { TourReadClient, TourUpdateClient, TravelModeChoices } from '../types'; // Import TravelModeChoices
 
-interface EditTourFormInput extends Omit<TourUpdateClient, 'price_per_guest' | 'max_capacity'> {
+interface EditTourFormInput extends Omit<TourUpdateClient, 'price_per_guest' | 'max_capacity' | 'travel_mode'> {
   price_per_guest_str?: string;
   max_capacity_str?: string;
+  travel_mode?: TravelModeChoices | ""; // Add travel_mode
 }
 
 const EditTourPage: React.FC = () => {
@@ -38,6 +39,7 @@ const EditTourPage: React.FC = () => {
         setValue('price_per_guest_str', String(tour.price_per_guest));
         setValue('max_capacity_str', tour.max_capacity ? String(tour.max_capacity) : '');
         setValue('itinerary_details', tour.itinerary_details || '');
+        setValue('travel_mode', tour.travel_mode as TravelModeChoices || ""); // Populate travel_mode
       } catch (err) {
         setApiError('Failed to load tour data.');
         console.error(err);
@@ -63,8 +65,9 @@ const EditTourPage: React.FC = () => {
       start_date: data.start_date,
       end_date: data.end_date,
       price_per_guest: data.price_per_guest_str ? parseFloat(data.price_per_guest_str) : undefined,
-      max_capacity: data.max_capacity_str ? parseInt(data.max_capacity_str, 10) : null,
+      max_capacity: data.max_capacity_str ? parseInt(data.max_capacity_str, 10) : undefined, // Allow unsetting to null if backend handles it, or filter if ""
       itinerary_details: data.itinerary_details || null,
+      travel_mode: data.travel_mode === "" ? undefined : data.travel_mode, // Convert empty string to undefined
     };
     // Filter out undefined values to avoid sending them if not changed/intended for partial update
     Object.keys(tourDataToSubmit).forEach(key =>
@@ -131,6 +134,16 @@ const EditTourPage: React.FC = () => {
         <div>
           <label htmlFor="itinerary_details">Itinerary Details (Optional, Markdown supported by backend):</label>
           <textarea id="itinerary_details" {...register('itinerary_details')} style={{...inputStyle, height: '120px', whiteSpace: 'pre-wrap'}} />
+        </div>
+
+        <div>
+          <label htmlFor="travel_mode">Travel Mode (Optional):</label>
+          <select id="travel_mode" {...register('travel_mode')} style={inputStyle}>
+            <option value="">Select Travel Mode</option>
+            {Object.values(TravelModeChoices).map((mode) => (
+              <option key={mode} value={mode}>{mode}</option>
+            ))}
+          </select>
         </div>
 
         {apiError && <p style={{ color: 'red', marginTop: '1rem' }}>Error during update: {apiError}</p>}
